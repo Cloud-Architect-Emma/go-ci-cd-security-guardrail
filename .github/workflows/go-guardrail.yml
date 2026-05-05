@@ -1,0 +1,26 @@
+name: Go Security Guardrail
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  go-security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build Go Gate
+        run: go build -o gate ./cmd/gate
+
+      - name: Run Security Gate
+        run: |
+          export CODE_INPUT=$(grep -r "API_KEY" . || true)
+          ./gate
