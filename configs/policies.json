@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {
+      "id": "SECRET_DETECTION",
+      "pattern": "sk-",
+      "message": "Hardcoded secret detected",
+      "severity": "HIGH"
+    },
+    {
+      "id": "API_KEY_EXPOSURE",
+      "pattern": "API_KEY",
+      "message": "Potential API key exposure",
+      "severity": "MEDIUM"
+    }
+  ]
+}

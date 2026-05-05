@@ -10,17 +10,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
 
-      - name: Build Go Gate
-        run: go build -o gate ./cmd/gate
-
-      - name: Run Security Gate
+      - name: Build Go Security Gate
         run: |
-          export CODE_INPUT=$(grep -r "API_KEY" . || true)
+          go mod tidy
+          go build -o gate ./cmd/gate
+
+      - name: Run Go Security Gate
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          echo "Scanning repository for secrets and API keys..."
+
+          # Extract potential risky patterns from codebase
+          CODE_INPUT=$(grep -rE "API_KEY|sk-" . || true)
+
+          # Export for Go program
+          export CODE_INPUT
+
+          # Run Go security gate
           ./gate
