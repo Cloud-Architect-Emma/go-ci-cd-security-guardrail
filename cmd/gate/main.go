@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	// CLI flags
 	configPath := flag.String("config", "configs/policies.json", "Path to policy file")
 	scanPath := flag.String("path", ".", "Path to scan")
 	flag.Parse()
@@ -20,43 +19,52 @@ func main() {
 	fmt.Println("Config:", *configPath)
 	fmt.Println("Scan path:", *scanPath)
 
-	// Load policy
 	policy, err := scanner.LoadPolicy(*configPath)
 	if err != nil {
-		fmt.Println("Failed to load policy:", err)
+		fmt.Println("❌ Failed to load policy:", err)
 		os.Exit(1)
 	}
 
-	// Run grep to collect input dynamically
 	cmd := exec.Command(
-	"grep",
-	"-rE",
-	"--exclude-dir=.git",
-	"--exclude-dir=.github",
-	"--exclude-dir=configs",
-	"--exclude=*.md",
-	"--exclude=*.json",
-	"API_KEY|sk-|token|secret",
-	*scanPath,
-)
-	output, _ := cmd.CombinedOutput() // ignore grep exit code
+		"grep",
+		"-rE",
+		"--exclude-dir=.git",
+		"--exclude-dir=.github",
+		"--exclude-dir=configs",
+		"--exclude=*.md",
+		"--exclude=*.json",
+		"API_KEY|sk-|token|secret",
+		*scanPath,
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("⚠️ Warning: grep execution issue:", err)
+	}
 
 	input := string(output)
 
-	// Scan
+	if input == "" {
+		fmt.Println("No suspicious patterns found")
+		fmt.Println("Go Security Gate passed")
+		return
+	}
+
 	result := scanner.Scan(input, policy)
 
 	if !result.Safe {
 		fmt.Println("❌ Security violations detected:")
+		message := "CI/CD Security Gate Failed\n\nIssues:\n"
+
 		for _, issue := range result.Issues {
 			fmt.Println("-", issue)
+			message += "- " + issue + "\n"
 		}
 
-		// Send Slack alert
-		notify.SendSlackAlert(
-			"CI/CD Security Gate Failed\n\n" +
-				fmt.Sprintf("Issues:\n%v", result.Issues),
-		)
+		err := notify.SendSlackAlert(message)
+		if err != nil {
+			fmt.Println("Slack notification failed:", err)
+		}
 
 		os.Exit(1)
 	}
