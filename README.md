@@ -55,7 +55,8 @@ The guardrail operates as a fail-closed security gate embedded directly in the C
           │  Deploy to prod  │                 │  (file, line,        │
           └─────────────────┘                 │   severity, fix)     │
                                               └──────────────────────┘
-Component Map
+
+## Component Map
 ComponentPurposego-guardrail.ymlWorkflow trigger, runner config, concurrency controlscmd/gate/main.goCLI entrypoint — orchestrates scan, formats outputinternal/scannerPolicy loader and pattern matching engineinternal/notifySlack webhook alertingconfigs/policies.jsonPolicy-as-code: patterns, severity, fix guidance
 Key Design Decisions
 Fail-closed by default — the pipeline blocks on any HIGH or MEDIUM violation; silence is not safety.
@@ -63,7 +64,7 @@ Self-exclusion — the scanner excludes its own cmd/ directory to avoid flagging
 Policy-as-code — all rules live in configs/policies.json, keeping detection logic out of source and making rules auditable as part of the codebase.
 Lightweight runtime — a single compiled Go binary with no runtime dependencies, keeping CI execution fast and the attack surface minimal.
 
-##How It Works
+## How It Works
 
 Developer pushes code to GitHub
 GitHub Actions triggers the pipeline
@@ -82,24 +83,28 @@ Pipeline passes
 
 
 
- ##Demo Scenario
-Step 1 — Introduce a vulnerability
+ ## Demo Scenario
+
+**Step 1 — Introduce a vulnerability**
 Add this to any .go file:
 goAPI_KEY = "sk-test-123"
-Step 2 — Push code
+
+**Step 2 — Push code**
 bashgit add .
 git commit -m "test security violation"
 git push
-Step 3 — Observe behavior
+
+**Step 3 — Observe behavior**
 
  Pipeline fails
  Slack alert triggered
  File and line of issue displayed
 
-Step 4 — Fix the issue
+**Step 4 — Fix the issue**
 Remove the hardcoded secret and use an environment variable instead:
 goapiKey := os.Getenv("API_KEY")
-Step 5 — Push again
+
+**Step 5 — Push again**
 bashgit commit -am "fix: remove hardcoded secret"
 git push
  Result
@@ -163,7 +168,7 @@ jobs:
 
     ```
 
-## Security Model
+ ## Security Model
 
 No secrets stored in codebase
 All credentials handled via environment variables
@@ -172,7 +177,7 @@ Deterministic policy overrides AI ambiguity
 Scanner self-excludes to eliminate false positives
 
 
- ##Use Cases
+ ## Use Cases
 
 DevSecOps pipelines
 Secure software delivery
@@ -180,7 +185,7 @@ Preventing secret leakage in CI/CD
 Enforcing compliance at the commit level
 
 
- ##Future Improvements
+ ## Future Improvements
 
 Replace grep with native Go concurrent scanner (goroutines)
 Severity-based blocking (HIGH only mode)
@@ -189,14 +194,14 @@ Multi-language scanning support
 .gateignore file for project-specific exclusions
 
 
- ##Author
+ ## Author
 Emmanuela Opurum — Cloud & AI Solutions Architect
 
 GitHub: Cloud-Architect-Emma
 LinkedIn: cloud-architect-emma
 
 
- ##Summary
+ ## Summary
 This project demonstrates how to move from passive detection to active enforcement in CI/CD using Go.
 
 Security is not just about finding issues — it's about stopping them before they reach production.
