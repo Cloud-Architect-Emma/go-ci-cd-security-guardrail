@@ -165,8 +165,8 @@ jobs:
         run: |
           echo "🔍 Running Go Security Guardrail..."
           ./gate --config configs/policies.json --path .
-
     ```
+
 
  ## Security Model
 
