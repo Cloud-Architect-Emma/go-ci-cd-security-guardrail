@@ -131,7 +131,7 @@ Full workflow with concurrency control and timeout:
 yamlname: Go Security Guardrail
 
 concurrency:
-  ```
+  
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
@@ -166,7 +166,7 @@ jobs:
           echo "🔍 Running Go Security Guardrail..."
           ./gate --config configs/policies.json --path .
 
-    ```
+   
 
  ## Security Model
 
