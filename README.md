@@ -22,5 +22,3 @@ GitHub Actions → AI Scan → Policy Engine → Go Security Gate → Deployment
 
 Designed for DevSecOps pipelines requiring reliable enforcement beyond AI-based scanning.
 
-Demo test:
-API_KEY = "sk-test-123"

@@ -27,13 +27,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          echo "Scanning repository for secrets and API keys..."
+          echo "🔍 Running Go Security Guardrail..."
 
-          # Extract potential risky patterns from codebase
-          CODE_INPUT=$(grep -rE "API_KEY|sk-" . || true)
-
-          # Export for Go program
-          export CODE_INPUT
-
-          # Run Go security gate
-          ./gate
+          ./gate --config configs/policies.json --path .

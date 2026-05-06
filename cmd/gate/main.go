@@ -1,31 +1,53 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/Cloud-Architect-Emma/go-ci-cd-security-guardrail/internal/notify"
 	"github.com/Cloud-Architect-Emma/go-ci-cd-security-guardrail/internal/scanner"
 )
 
 func main() {
-	input := os.Getenv("CODE_INPUT")
+	// CLI flags
+	configPath := flag.String("config", "configs/policies.json", "Path to policy file")
+	scanPath := flag.String("path", ".", "Path to scan")
+	flag.Parse()
 
-	policy, err := scanner.LoadPolicy("configs/policies.json")
+	fmt.Println("🔍 Running Go Security Guardrail...")
+	fmt.Println("Config:", *configPath)
+	fmt.Println("Scan path:", *scanPath)
+
+	// Load policy
+	policy, err := scanner.LoadPolicy(*configPath)
 	if err != nil {
 		fmt.Println("Failed to load policy:", err)
 		os.Exit(1)
 	}
 
+	// Run grep to collect input dynamically
+	cmd := exec.Command("grep", "-rE", "API_KEY|sk-|token|secret", *scanPath)
+	output, _ := cmd.CombinedOutput() // ignore grep exit code
+
+	input := string(output)
+
+	// Scan
 	result := scanner.Scan(input, policy)
 
 	if !result.Safe {
-		fmt.Println("Security violations detected:")
+		fmt.Println("❌ Security violations detected:")
 		for _, issue := range result.Issues {
 			fmt.Println("-", issue)
 		}
 
-		notify.SendSlackAlert("CI/CD Security Gate Failed:\n" + fmt.Sprint(result.Issues))
+		// Send Slack alert
+		notify.SendSlackAlert(
+			"CI/CD Security Gate Failed\n\n" +
+				fmt.Sprintf("Issues:\n%v", result.Issues),
+		)
+
 		os.Exit(1)
 	}
 
