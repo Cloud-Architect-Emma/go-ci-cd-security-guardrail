@@ -28,7 +28,17 @@ func main() {
 	}
 
 	// Run grep to collect input dynamically
-	cmd := exec.Command("grep", "-rE", "API_KEY|sk-|token|secret", *scanPath)
+	cmd := exec.Command(
+	"grep",
+	"-rE",
+	"--exclude-dir=.git",
+	"--exclude-dir=.github",
+	"--exclude-dir=configs",
+	"--exclude=*.md",
+	"--exclude=*.json",
+	"API_KEY|sk-|token|secret",
+	*scanPath,
+)
 	output, _ := cmd.CombinedOutput() // ignore grep exit code
 
 	input := string(output)
