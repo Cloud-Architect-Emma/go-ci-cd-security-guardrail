@@ -28,10 +28,11 @@ func main() {
 
 	cmd := exec.Command(
 		"grep",
-		"-rEn", // <-- IMPORTANT: includes line numbers
+		"-rEn",
 		"--exclude-dir=.git",
 		"--exclude-dir=.github",
 		"--exclude-dir=configs",
+		"--exclude-dir=cmd",       // FIX: exclude the scanner's own source directory
 		"--exclude=*.md",
 		"--exclude=*.json",
 		"--exclude=gate",
@@ -53,13 +54,11 @@ func main() {
 	}
 
 	lines := strings.Split(input, "\n")
-
 	result := scanner.Scan(input, policy)
 
 	if !result.Safe {
-		fmt.Println("\n❌ Security violations detected:\n")
-
-		message := " CI/CD Security Gate Failed\n\n"
+		fmt.Println("\n Security violations detected:\n")
+		message := "CI/CD Security Gate Failed\n\n"
 
 		for _, line := range lines {
 			if strings.TrimSpace(line) == "" {
