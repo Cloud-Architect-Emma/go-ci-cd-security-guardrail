@@ -13,9 +13,9 @@ This project demonstrates how to combine deterministic policy enforcement with a
  File-level detection with line-level traceability
 
 
- ## Architecture
+## Architecture
 
-![AI Guardrail Pipeline Architecture](GO-architecture-diagram.PNG)
+![AI Guardrail Pipeline Architecture](architecture/GO-architecture-diagram.PNG)
 
 ## Component Map
 ComponentPurposego-guardrail.ymlWorkflow trigger, runner config, concurrency controlscmd/gate/main.goCLI entrypoint — orchestrates scan, formats outputinternal/scannerPolicy loader and pattern matching engineinternal/notifySlack webhook alertingconfigs/policies.jsonPolicy-as-code: patterns, severity, fix guidance
