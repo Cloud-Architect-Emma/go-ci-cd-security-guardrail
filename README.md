@@ -123,7 +123,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          echo "🔍 Running Go Security Guardrail..."
+          echo " Running Go Security Guardrail..."
           ./gate --config configs/policies.json --path .```
 
     
