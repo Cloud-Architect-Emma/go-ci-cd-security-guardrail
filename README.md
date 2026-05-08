@@ -13,48 +13,9 @@ This project demonstrates how to combine deterministic policy enforcement with a
  File-level detection with line-level traceability
 
 
-   ## Architecture
-The guardrail operates as a fail-closed security gate embedded directly in the CI/CD pipeline. Every push to main or pull request triggers the full scan before any merge is permitted.
-┌─────────────────────────────────────────────────────────────────────┐
-│  SOURCE LAYER                                                        │
-│                                                                      │
-│   Developer  ──git push/PR──▶  GitHub Repo  ──trigger──▶  go-guardrail.yml │
-└─────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  CI/CD LAYER                                                         │
-│                                                                      │
-│   actions/checkout ◀── GitHub Actions Runner ──▶ actions/setup-go  │
-│                        (ubuntu-latest, 10m timeout,                 │
-│                         concurrency: cancel-in-progress)            │
-│                                │                                     │
-│                                ▼                                     │
-│                   go build -o gate ./cmd/gate                        │
-└─────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  SECURITY GATE LAYER                                                 │
-│                                                                      │
-│   policies.json ──▶  ./gate --path .  ◀──  internal/scanner pkg    │
-│   (patterns,          grep scan,                                     │
-│    severity,          excludes cmd/                                  │
-│    fix guidance)      to prevent false positives)                    │
-└─────────────────────────────────────────────────────────────────────┘
-                                      │
-                          ┌───────────┴───────────┐
-                          │   Violation found?    │
-                          └───────────┬───────────┘
-                    NO ───────────────┘───────────────── YES
-                    │                                     │
-                    ▼                                     ▼
-          ┌─────────────────┐                 ┌──────────────────────┐
-          │  Pipeline PASS │                 │  exit 1 — FAIL     │
-          │  Merge allowed   │                 │  + Slack alert     │
-          │  Deploy to prod  │                 │  (file, line,        │
-          └─────────────────┘                 │   severity, fix)     │
-                                              └──────────────────────┘
+ ## Architecture
+
+![AI Guardrail Pipeline Architecture](GO-architecture-diagram.PNG))
 
 ## Component Map
 ComponentPurposego-guardrail.ymlWorkflow trigger, runner config, concurrency controlscmd/gate/main.goCLI entrypoint — orchestrates scan, formats outputinternal/scannerPolicy loader and pattern matching engineinternal/notifySlack webhook alertingconfigs/policies.jsonPolicy-as-code: patterns, severity, fix guidance
