@@ -67,7 +67,7 @@ func SendSlackAlert(message string) error {
 		)
 	}
 
-	fmt.Println("Slack alert sent successfully")
+	fmt.Println(" Slack alert sent successfully")
 
 	return nil
 }
