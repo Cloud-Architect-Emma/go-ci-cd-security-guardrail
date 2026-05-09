@@ -165,3 +165,5 @@ LinkedIn: cloud-architect-emma
 This project demonstrates how to move from passive detection to active enforcement in CI/CD using Go.
 
 Security is not just about finding issues — it's about stopping them before they reach production.
+
+API_KEY=sk-test-123
