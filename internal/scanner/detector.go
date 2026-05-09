@@ -1,40 +1,114 @@
-package scanner
+package main
 
 import (
+	"bufio"
+	"flag"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
-	"sync"
+
+	"github.com/Cloud-Architect-Emma/go-ci-cd-security-guardrail/internal/notify"
+	"github.com/Cloud-Architect-Emma/go-ci-cd-security-guardrail/internal/scanner"
 )
 
-type ScanResult struct {
-	Safe   bool
-	Issues []string
-}
+func main() {
+	configPath := flag.String("config", "configs/policies.json", "Path to policy file")
+	scanPath := flag.String("path", ".", "Path to scan")
+	flag.Parse()
 
-func Scan(input string, policy Policy) ScanResult {
-	var wg sync.WaitGroup
-	issuesChan := make(chan string, len(policy.Rules))
+	fmt.Println(" Running Go Security Guardrail...")
+	fmt.Println("Config:", *configPath)
+	fmt.Println("Scan path:", *scanPath)
 
-	for _, rule := range policy.Rules {
-		wg.Add(1)
+	policy, err := scanner.LoadPolicy(*configPath)
+	if err != nil {
+		fmt.Println(" Failed to load policy:", err)
+		os.Exit(1)
+	}
 
-		go func(r Rule) {
-			defer wg.Done()
-			if strings.Contains(input, r.Pattern) {
-				issuesChan <- r.Message + " [" + r.Severity + "]"
+	var findings []string
+
+	err = filepath.Walk(*scanPath, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			return nil
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			if strings.Contains(path, ".git") ||
+				strings.Contains(path, ".github") {
+				return filepath.SkipDir
 			}
-		}(rule)
+			return nil
+		}
+
+		// Scan only code files
+		if !(strings.HasSuffix(path, ".go") ||
+			strings.HasSuffix(path, ".txt") ||
+			strings.HasSuffix(path, ".env")) {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
+		defer file.Close()
+
+		scannerReader := bufio.NewScanner(file)
+		lineNumber := 0
+
+		for scannerReader.Scan() {
+			lineNumber++
+			line := scannerReader.Text()
+
+			result := scanner.Scan(line, policy)
+
+			if !result.Safe {
+				for _, issue := range result.Issues {
+
+					finding := fmt.Sprintf(
+						"%s | Line %d | %s",
+						path,
+						lineNumber,
+						issue,
+					)
+
+					findings = append(findings, finding)
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Println("Scan error:", err)
+		os.Exit(1)
 	}
 
-	wg.Wait()
-	close(issuesChan)
+	if len(findings) > 0 {
 
-	var issues []string
-	for issue := range issuesChan {
-		issues = append(issues, issue)
+		fmt.Println(" Security violations detected:")
+
+		message := " CI/CD Security Gate Failed\n\n"
+
+		for _, finding := range findings {
+			fmt.Println("-", finding)
+
+			message += "- " + finding + "\n"
+		}
+
+		err := notify.SendSlackAlert(message)
+
+		if err != nil {
+			fmt.Println("Slack notification failed:", err)
+		}
+
+		os.Exit(1)
 	}
 
-	return ScanResult{
-		Safe:   len(issues) == 0,
-		Issues: issues,
-	}
+	fmt.Println(" Go Security Gate passed")
 }
