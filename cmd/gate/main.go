@@ -11,6 +11,8 @@ import (
 	"github.com/Cloud-Architect-Emma/go-ci-cd-security-guardrail/internal/scanner"
 )
 
+var API_KEY = "sk-test-123"
+
 func main() {
 	configPath := flag.String("config", "configs/policies.json", "Path to policy file")
 	scanPath := flag.String("path", ".", "Path to scan")
