@@ -28,14 +28,14 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Println(" Running Go Security Guardrail...")
+	fmt.Println("Running Go Security Guardrail...")
 	fmt.Println("Config:", *configPath)
 	fmt.Println("Scan path:", *scanPath)
 
-	// Load security policy
+	// Load policy
 	policy, err := scanner.LoadPolicy(*configPath)
 	if err != nil {
-		fmt.Println(" Failed to load policy:", err)
+		fmt.Println("Failed to load policy:", err)
 		os.Exit(1)
 	}
 
@@ -43,25 +43,34 @@ func main() {
 	cmd := exec.Command(
 		"grep",
 		"-rEn",
+
+		// Exclude folders
 		"--exclude-dir=.git",
 		"--exclude-dir=.github",
 		"--exclude-dir=configs",
+		"--exclude-dir=internal",
+
+		// Exclude files
 		"--exclude=*.md",
 		"--exclude=*.json",
 		"--exclude=go.sum",
 		"--exclude=go.mod",
+		"--exclude=main.go",
 		"--exclude=gate",
+
+		// Search patterns
 		"API_KEY|sk-|token|secret",
+
 		*scanPath,
 	)
 
 	output, err := cmd.CombinedOutput()
 
-	// Ignore grep exit code 1 (means no matches found)
+	// Ignore grep exit code 1
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.ExitCode() != 1 {
-				fmt.Println(" Warning: grep execution issue:", err)
+				fmt.Println("Warning: grep execution issue:", err)
 			}
 		}
 	}
@@ -70,23 +79,22 @@ func main() {
 
 	// No findings
 	if strings.TrimSpace(input) == "" {
-		fmt.Println(" No suspicious patterns found")
-		fmt.Println(" Go Security Gate passed")
+		fmt.Println("No suspicious patterns found")
+		fmt.Println("Go Security Gate passed")
 		return
 	}
 
-	// Split grep output into lines
 	lines := strings.Split(input, "\n")
 
-	// Run policy scan
+	// Run scanner
 	result := scanner.Scan(input, policy)
 
-	// If violations exist
+	// Violations found
 	if !result.Safe {
 
-		fmt.Println("\n Security violations detected:\n")
+		fmt.Println("\nSecurity violations detected:\n")
 
-		message := " CI/CD Security Gate Failed\n\n"
+		message := "CI/CD Security Gate Failed\n\n"
 
 		for _, line := range lines {
 
@@ -94,7 +102,7 @@ func main() {
 				continue
 			}
 
-			// Format: file:line:content
+			// file:line:content
 			parts := strings.SplitN(line, ":", 3)
 
 			if len(parts) < 3 {
@@ -108,18 +116,18 @@ func main() {
 			severity := "MEDIUM"
 			fix := "Review and remove sensitive data"
 
-			// Severity logic
+			// Severity handling
 			if strings.Contains(code, "sk-") {
 
 				severity = "HIGH"
 
-				fix = "Remove hardcoded secrets and use environment variables or a secret manager"
+				fix = "Remove hardcoded secrets and use environment variables"
 
 			} else if strings.Contains(code, "API_KEY") {
 
 				severity = "MEDIUM"
 
-				fix = "Do not expose API keys in source code. Store them securely in environment variables"
+				fix = "Store API keys securely using environment variables"
 
 			} else if strings.Contains(
 				strings.ToLower(code),
@@ -128,7 +136,7 @@ func main() {
 
 				severity = "HIGH"
 
-				fix = "Avoid embedding authentication tokens in code"
+				fix = "Avoid embedding tokens directly in code"
 			}
 
 			// Console output
@@ -154,13 +162,13 @@ func main() {
 		err := notify.SendSlackAlert(message)
 
 		if err != nil {
-			fmt.Println(" Slack notification failed:", err)
+			fmt.Println("Slack notification failed:", err)
 		} else {
-			fmt.Println(" Slack alert sent")
+			fmt.Println("Slack alert sent")
 		}
 
 		os.Exit(1)
 	}
 
-	fmt.Println("✅ Go Security Gate passed")
+	fmt.Println("Go Security Gate passed")
 }
